@@ -1,0 +1,11 @@
+add cors
+remove check health
+разбить джсон на номер и серию
+добавить обработку по статусам
+move filetrs func to usecase
+
+add dublicate keyvalue error
+перенести креденшлс из хендлера в хелпер (юзерс)
+move custom err and cust resp
+revisit all validators in handlers
+remove bool attribute from create job
