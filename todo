@@ -9,3 +9,8 @@ add dublicate keyvalue error
 move custom err and cust resp
 revisit all validators in handlers
 remove bool attribute from create job
+add job status
+revisit main users filters
+исправить микросекунды
+добавить фильтры по всем полям
+

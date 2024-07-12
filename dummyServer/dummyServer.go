@@ -2,6 +2,7 @@ package dummyServer
 
 import (
 	"encoding/json"
+	"fmt"
 	mux2 "github.com/gorilla/mux"
 	"github.com/kpango/glg"
 	"net/http"
@@ -12,7 +13,7 @@ func StartDummy() {
 	mux := mux2.NewRouter()
 
 	// Register handler functions
-	mux.HandleFunc("/", greetHandler).Methods(http.MethodPost)
+	mux.HandleFunc("/info", greetHandler).Methods(http.MethodGet)
 
 	httpServer := &http.Server{
 		Addr:           "localhost:9090",
@@ -31,12 +32,14 @@ func StartDummy() {
 }
 
 func greetHandler(w http.ResponseWriter, r *http.Request) {
-	var input map[string]string
+	query := r.URL.Query()
 
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		glg.Error(err)
-		return
-	}
+	// Retrieve specific query parameters by their keys
+	passportSerie := query.Get("passportSerie")
+	passportNumber := query.Get("passportNumber")
+
+	glg.Debugf("got from main app %s %s", passportSerie, passportNumber)
+
 	d := map[string]respondUser{
 		"1234 000001": {
 			Surname:    "Иванов",
@@ -76,11 +79,16 @@ func greetHandler(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	if _, ok := d[input["passportNumber"]]; ok {
-
+	if _, ok := d[fmt.Sprintf("%s %s", passportSerie, passportNumber)]; ok {
+		glg.Debugf("returningOk")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(d[input["passportNumber"]])
+
+		json.NewEncoder(w).Encode(d[fmt.Sprintf("%s %s", passportSerie, passportNumber)])
+		return
 	}
+	glg.Debugf("returning 500")
+	w.WriteHeader(http.StatusBadRequest)
+	return
 
 	//w.WriteHeader(http.StatusInternalServerError)
 

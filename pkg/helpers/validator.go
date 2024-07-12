@@ -2,7 +2,8 @@ package Helpers
 
 import (
 	"github.com/go-playground/validator/v10"
-	"time"
+	"strconv"
+	"strings"
 )
 
 type Ivalidator interface {
@@ -17,8 +18,8 @@ func NewValidator() Ivalidator {
 	v := Validator{
 		validator: validator.New(),
 	}
-	v.validator.RegisterValidation("date", v.ValidateDate)
-	v.validator.RegisterValidation("settings", v.ValidateSettings)
+	v.validator.RegisterValidation("passportNumber", v.PassportNumber)
+	//	v.validator.RegisterValidation("settings", v.ValidateSettings)
 
 	return &v
 }
@@ -31,21 +32,30 @@ func (v *Validator) Validate(input interface{}) error {
 		return err
 	}
 
-	/*for _, err := range err.(validator.ValidationErrors) {
-
-		fmt.Println(err.Field())
-		fmt.Println(err.Tag())
-	}*/
-
 	return nil
 }
 
-func (v *Validator) ValidateDate(fl validator.FieldLevel) bool {
-	dateStr := fl.Field().String()
-	_, err := time.Parse("2006-01-02", dateStr)
-	return err == nil
+func (v *Validator) PassportNumber(fl validator.FieldLevel) bool {
+	passportStr := fl.Field().String()
+	parts := strings.Split(passportStr, " ")
+	if len(parts) != 2 {
+		return false
+	}
+	if len(parts[0]) != 4 || len(parts[1]) != 6 {
+		return false
+	}
+	number, err := strconv.Atoi(parts[0])
+	if err != nil || number < 0 {
+		return false
+	}
+	serie, err := strconv.Atoi(parts[1])
+	if err != nil || serie < 0 {
+		return false
+	}
+	return true
 }
 
+/*
 func (v *Validator) ValidateSettings(fl validator.FieldLevel) bool {
 	input, ok := fl.Field().Interface().([]int)
 	if !ok {
@@ -68,3 +78,8 @@ func (v *Validator) ValidateSettings(fl validator.FieldLevel) bool {
 	return output
 
 }
+func (v *Validator) ValidateDate(fl validator.FieldLevel) bool {
+	dateStr := fl.Field().String()
+	_, err := time.Parse("2006-01-02", dateStr)
+	return err == nil
+}*/

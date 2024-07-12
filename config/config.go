@@ -9,6 +9,7 @@ type Config struct {
 	Addr            string
 	Port            int
 	Debug           bool
+	SideServerUrl   string
 }
 
 func NewConfig(pth string) (*Config, error) {
@@ -33,12 +34,15 @@ func NewConfig(pth string) (*Config, error) {
 	addr := viper.GetString("app.addr")
 	port := viper.GetInt("app.port")
 	logDebug := viper.GetBool("app.log_debug")
+	SideServerUrl := viper.GetString("app.SideServerUrl")
 
 	c := Config{
 		Psql_connection: PSQL_CONNECTION_STRING,
 		Addr:            addr,
 		Port:            port,
 		Debug:           logDebug,
+
+		SideServerUrl: SideServerUrl,
 	}
 
 	// Example usage

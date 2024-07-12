@@ -1,9 +1,9 @@
 package delivery
 
 import (
-	"EM-Api-testTask/internal"
 	"EM-Api-testTask/internal/jobs"
 	"EM-Api-testTask/internal/models"
+	"EM-Api-testTask/pkg/handler"
 	Helpers "EM-Api-testTask/pkg/helpers"
 	"encoding/json"
 	"github.com/kpango/glg"
@@ -31,7 +31,7 @@ func (h *Handler) AddJob() http.HandlerFunc {
 		v := Helpers.NewValidator()
 		if err := v.Validate(dto); err != nil {
 
-			h.customErr(w, r, http.StatusUnprocessableEntity, internal.ApiWrongInput)
+			h.customErr(w, r, http.StatusUnprocessableEntity, handler.ApiWrongInput)
 			return
 		}
 

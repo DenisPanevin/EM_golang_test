@@ -18,7 +18,7 @@ func NewJobsUseCase(ur jobs.Repository) jobs.UseCase {
 }
 
 func (t TasksUseCase) AddJob(ctx context.Context, dto *models.AddJobDto) (error, *int64) {
-	println("checkingExist")
+
 	job, err := t.repo.CheckExist(ctx, dto)
 	if err != nil {
 		switch err.Error() {

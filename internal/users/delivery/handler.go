@@ -3,7 +3,8 @@ package delivery
 import (
 	"EM-Api-testTask/internal/models"
 	"EM-Api-testTask/internal/users"
-	"bytes"
+	"EM-Api-testTask/pkg/handler"
+	Helpers "EM-Api-testTask/pkg/helpers"
 	"encoding/json"
 	"fmt"
 	"github.com/kpango/glg"
@@ -27,32 +28,24 @@ func (h *Handler) CreateUser() http.HandlerFunc {
 			h.customErr(w, r, http.StatusBadRequest, err)
 			return
 		}
-
-		/*if err := validators.Validate(*dto); err != nil {
-			h.customErr(w, r, http.StatusUnprocessableEntity, internal.ApiWrongInput)
-			return
-		}*/
-
-		err, cu := SendCredentials("http://localhost:9090/", *dto)
-		if err != nil {
-			glg.Debugf("send credentials", err)
-			h.customRespond(w, r, http.StatusInternalServerError, nil)
+		v := Helpers.NewValidator()
+		if err := v.Validate(dto); err != nil {
+			h.customErr(w, r, http.StatusUnprocessableEntity, handler.ApiWrongInput)
 			return
 		}
 
-		/*if err = validators.Validate(*cu); err != nil {
-			glg.Debugf("validation error", err)
-			h.customRespond(w, r, http.StatusInternalServerError, nil)
-			return
-		}*/
-
-		err, id := h.useCase.Create(r.Context(), *cu)
+		err, id := h.useCase.Create(r.Context(), dto)
 		if err != nil {
 			h.customRespond(w, r, http.StatusInternalServerError, nil)
 			return
 		}
+		if id != nil {
+			h.customRespond(w, r, http.StatusOK, fmt.Sprintf("Created! user id is %v", *id))
+			return
+		}
 
-		h.customRespond(w, r, http.StatusOK, fmt.Sprintf("Created! user id is %v", *id))
+		h.customRespond(w, r, http.StatusInternalServerError, nil)
+		return
 
 	}
 
@@ -61,55 +54,44 @@ func (h *Handler) CreateUser() http.HandlerFunc {
 func (h *Handler) Get() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		h.useCase.Get(r)
+		err, u := h.useCase.Get(r)
+
+		if err != nil {
+			h.customErr(w, r, 500, err)
+		}
+
+		h.customRespond(w, r, http.StatusOK, u)
+
+	}
+
+}
+func (h *Handler) UpdateUser() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		err, u := h.useCase.Get(r)
+
+		if err != nil {
+			h.customErr(w, r, 500, err)
+		}
+
+		h.customRespond(w, r, http.StatusOK, u)
 
 	}
 
 }
 
-func SendCredentials(url string, credentials models.PassportNumberDto) (error, *models.CreateUserDto) {
-	//url := "http://localhost:9090/"
-
-	jsonData, err := json.Marshal(credentials)
-	if err != nil {
-		return err, nil
-	}
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
-	if err != nil {
-		return err, nil
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	// Perform the HTTP POST request
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return err, nil
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return err, nil
-	}
-
-	cu := models.CreateUserDto{
-		PassportNumber: credentials.PassportNumber,
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&cu); err != nil {
-		return err, nil
-	}
-
-	return nil, &cu
-
-}
 func (h *Handler) customErr(w http.ResponseWriter, r *http.Request, code int, err error) {
 	h.customRespond(w, r, code, map[string]string{"error:": err.Error()})
 }
 func (h *Handler) customRespond(w http.ResponseWriter, r *http.Request, code int, data interface{}) {
+
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 
 	if data != nil {
-		json.NewEncoder(w).Encode(data)
+		if err := json.NewEncoder(w).Encode(data); err != nil {
+			glg.Debugf("", err)
+		}
 	}
 }
 

@@ -6,5 +6,5 @@ type User struct {
 	Name           string `json:"name,omitempty"`
 	Surname        string `json:"surname,omitempty"`
 	Patronymic     string `json:"patronymic,omitempty"`
-	Adress         string `json:"adress,omitempty"`
+	Address        string `json:"adress,omitempty"`
 }
