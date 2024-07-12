@@ -33,6 +33,7 @@ type DeleteUserDto struct {
 // Create a map to hold the field values
 
 type FiltersDto struct {
+	Id         int
 	Name       string
 	Surname    string
 	Patronymic string

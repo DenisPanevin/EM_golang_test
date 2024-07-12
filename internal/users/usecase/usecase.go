@@ -65,9 +65,10 @@ func (uc *UserUseCase) Create(ctx context.Context, dto *models.PassportNumberDto
 	}
 	return nil, id
 }
-func (uc *UserUseCase) Get(r *http.Request) (error, *[]models.ShowUserDto) {
+func (uc *UserUseCase) GetJob(r *http.Request) (error, *[]models.ShowUserDto) {
 	query := r.URL.Query()
 	dto := models.FiltersDto{
+		Id:         0,
 		Name:       "",
 		Surname:    "",
 		Patronymic: "",
@@ -77,7 +78,20 @@ func (uc *UserUseCase) Get(r *http.Request) (error, *[]models.ShowUserDto) {
 	}
 
 	for key, values := range query {
+		println(values[0])
 		switch key {
+		case "id":
+			id, err := strconv.Atoi(values[0])
+			if err != nil {
+				glg.Debugf("cant Parse int id from url", err)
+				return handler.ApiWrongInput, nil
+				dto.Page = 1
+			}
+			if id > 0 {
+				dto.Id = id
+			} else {
+				return handler.ApiWrongInput, nil
+			}
 		case "name":
 			dto.Name = values[0]
 
@@ -131,7 +145,7 @@ func (uc *UserUseCase) Get(r *http.Request) (error, *[]models.ShowUserDto) {
 
 	}
 
-	err, u := uc.repo.Get(r.Context(), dto)
+	err, u := uc.repo.GetJob(r.Context(), dto)
 	if err != nil {
 		glg.Debugf("usecase error ,%s", err)
 		return err, nil

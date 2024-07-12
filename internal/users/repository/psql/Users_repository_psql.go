@@ -19,7 +19,7 @@ type UsersRepo struct {
 	db *pgxpool.Pool
 }
 
-func (u UsersRepo) Get(ctx context.Context, filters models.FiltersDto) (error, *[]models.ShowUserDto) {
+func (u UsersRepo) GetJob(ctx context.Context, filters models.FiltersDto) (error, *[]models.ShowUserDto) {
 
 	//query := `SELECT id,passportnumber,name,surname,patronymic,address FROM users WHERE (name=$1 or $1='') and (surname=$2 or $2='') and (patronymic=$3 or $3='') and ($4=0) limit $5 offset $6`
 	//	query := `SELECT id,passportnumber,name,surname,patronymic,address FROM users WHERE (name=$1 or $1='')`
@@ -37,14 +37,15 @@ FROM
         JOIN
     tasks t ON j.task_id = t.id
 WHERE
-    (u.name=$1 or $1='') and (u.surname=$2 or $2='') and (u.patronymic=$3 or $3='') and ($4=0) 
+   (u.id=$1 or $1=0)and (u.name=$2 or $2='') and (u.surname=$3 or $3='') and (u.patronymic=$4 or $4='') and ($5=0) 
 GROUP BY
     j.task_id, j.user_id, u.name,u.surname,u.patronymic,t.name,u.address,u.passportnumber
 ORDER BY
     total_work DESC
-limit $5 offset $6;`
+limit $6 offset $7;`
 
 	values, err := filtersToValues(filters)
+
 	if err != nil {
 		return err, nil
 	}

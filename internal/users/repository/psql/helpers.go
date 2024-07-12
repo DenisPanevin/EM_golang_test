@@ -7,10 +7,11 @@ import (
 
 func filtersToValues(input models.FiltersDto) ([]interface{}, error) {
 	var output []interface{}
-	if input.Name == "" && input.Surname == "" && input.Patronymic == "" {
+
+	if input.Name == "" && input.Surname == "" && input.Patronymic == "" && input.Id == 0 {
 		return nil, errors.New("required at least one filter")
 	}
-
+	output = append(output, input.Id)
 	output = append(output, input.Name)
 	//println(input.Name)
 	output = append(output, input.Surname)

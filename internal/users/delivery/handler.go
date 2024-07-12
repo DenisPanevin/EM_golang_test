@@ -54,7 +54,7 @@ func (h *Handler) CreateUser() http.HandlerFunc {
 func (h *Handler) Get() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		err, u := h.useCase.Get(r)
+		err, u := h.useCase.GetJob(r)
 
 		if err != nil {
 			h.customErr(w, r, 500, err)
@@ -68,14 +68,14 @@ func (h *Handler) Get() http.HandlerFunc {
 func (h *Handler) UpdateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		err, u := h.useCase.Get(r)
+		/*err, u := h.useCase.Update(r)
 
 		if err != nil {
 			h.customErr(w, r, 500, err)
 		}
 
 		h.customRespond(w, r, http.StatusOK, u)
-
+		*/
 	}
 
 }
