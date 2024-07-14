@@ -14,3 +14,65 @@ revisit main users filters
 исправить микросекунды
 добавить фильтры по всем полям
 
+добавить минимальные фильтры
+сделать валидацию паспорта и адреса по _
+add switc to dummy errors
+correct gobs startet ended no tz
+
+добавить хендлер просто на юзеров
+добавить мету???
+
+ВЫНЕСТИ РЕСПОНД!
+
+
+	query := `SELECT
+
+    j.user_id ,
+    u.name AS user_name,u.surname,u.patronymic,u.address,u.passportnumber,t.id,t.name,
+    SUM(CASE WHEN j.stopped - j.started >= INTERVAL '0' THEN j.stopped - j.started ELSE INTERVAL '0' END) AS total_work
+FROM
+    jobs j
+        JOIN
+    users u ON j.user_id = u.id
+        JOIN
+    tasks t ON j.task_id = t.id
+WHERE
+    (u.name=$1 or $1='') and (u.surname=$2 or $2='') and (u.patronymic=$3 or $3='')and (u.id=$4 or $4=0)
+AND ((j.started >= $5::timestamp AND j.stopped <=$6::timestamp)or task_id=0)
+GROUP BY
+     j.user_id, u.name,u.surname,u.patronymic,t.name,u.address,u.passportnumber,t.id,t.name
+  ORDER BY
+    total_work DESC
+limit $7 offset $8
+ ;
+    `
+
+	rows, err := u.db.Query(ctx, query, filters.Name, filters.Surname, filters.Patronymic, filters.Id, pagefilters.DateStart, pagefilters.DateEnd, pagefilters.Limit, pagefilters.Offset)
+
+
+
+
+
+filters := models.UserFiltersDto{}
+
+	if vals.Get("id") != "" {
+		id, err := strconv.Atoi(vals.Get("id"))
+		if err != nil || id <= 0 {
+			glg.Debugf("error parsing id in filters %s", err)
+			return handler.ApiWrongInput, nil
+		} else {
+			filters.Id = id
+		}
+	}
+
+	filters.Name = vals.Get("name")
+	filters.Surname = vals.Get("surname")
+	filters.Patronymic = vals.Get("patronymic")
+	filters.PassportNumber = vals.Get("passportnumber")
+	filters.Address = vals.Get("address")
+	v := Helpers.NewValidator()
+	err := v.Validate(filters)
+	if err != nil {
+		glg.Debugf("error validating filters %s", err)
+		return handler.ApiWrongInput, nil
+	}

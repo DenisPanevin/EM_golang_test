@@ -7,8 +7,11 @@ import (
 	Helpers "EM-Api-testTask/pkg/helpers"
 	"encoding/json"
 	"fmt"
+	"github.com/gorilla/mux"
 	"github.com/kpango/glg"
+	"golang.org/x/net/webdav"
 	"net/http"
+	"strconv"
 )
 
 type Handler struct {
@@ -54,10 +57,11 @@ func (h *Handler) CreateUser() http.HandlerFunc {
 func (h *Handler) Get() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		err, u := h.useCase.GetJob(r)
+		err, u := h.useCase.GetAll(r.Context(), r.URL.Query())
 
 		if err != nil {
 			h.customErr(w, r, 500, err)
+			return
 		}
 
 		h.customRespond(w, r, http.StatusOK, u)
@@ -67,15 +71,67 @@ func (h *Handler) Get() http.HandlerFunc {
 }
 func (h *Handler) UpdateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
 
-		/*err, u := h.useCase.Update(r)
-
-		if err != nil {
-			h.customErr(w, r, 500, err)
+		id, err := strconv.Atoi(vars["id"])
+		if err != nil || id < 1 {
+			glg.Logf("cant parse id from updat user handler %s", err)
+			h.customErr(w, r, http.StatusUnprocessableEntity, handler.ApiWrongInput)
+			return
+		}
+		dto := models.UpdateUserDto{
+			Id:             0,
+			Name:           "",
+			Surname:        "",
+			Patronymic:     "",
+			PassportNumber: "",
+			Address:        "",
+		}
+		if err = json.NewDecoder(r.Body).Decode(&dto); err != nil {
+			glg.Debugf("cant decode json in update handler %s", err)
+			h.customErr(w, r, http.StatusBadRequest, handler.ApiWrongInput)
+			return
+		}
+		v := Helpers.NewValidator()
+		if err = v.Validate(dto); err != nil {
+			glg.Debugf("cant validate json in update handler %s", err)
+			h.customErr(w, r, http.StatusUnprocessableEntity, handler.ApiWrongInput)
+			return
 		}
 
-		h.customRespond(w, r, http.StatusOK, u)
-		*/
+		if dto.Name == "" && dto.Surname == "" && dto.Patronymic == "" && dto.PassportNumber == "" && dto.Address == "" {
+			h.customErr(w, r, webdav.StatusUnprocessableEntity, handler.ApiWrongInput)
+			return
+		}
+		dto.Id = id
+
+		err, uid := h.useCase.Update(r.Context(), dto)
+		if err != nil {
+			glg.Debugf("error in update usecase returning %s", err)
+			h.customRespond(w, r, http.StatusInternalServerError, nil)
+			return
+		}
+		h.customRespond(w, r, http.StatusOK, fmt.Sprintf("Updated, user id is %v", *uid))
+	}
+
+}
+func (h *Handler) DeleteUser() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+
+		id, err := strconv.Atoi(vars["id"])
+		if err != nil || id < 1 {
+			glg.Logf("cant parse id from updat user handler %s", err)
+			h.customErr(w, r, http.StatusUnprocessableEntity, handler.ApiWrongInput)
+			return
+		}
+		err = h.useCase.DeleteUser(r.Context(), id)
+		if err != nil {
+			glg.Debugf("error in delete usecase returning %s", err)
+			h.customErr(w, r, http.StatusInternalServerError, err)
+			return
+		}
+		h.customRespond(w, r, http.StatusOK, fmt.Sprintf("Deleted user with id %v", id))
 	}
 
 }
@@ -93,13 +149,4 @@ func (h *Handler) customRespond(w http.ResponseWriter, r *http.Request, code int
 			glg.Debugf("", err)
 		}
 	}
-}
-
-// misc
-func (h *Handler) CheckHealth() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Check")
-
-	}
-
 }

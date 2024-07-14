@@ -19,7 +19,8 @@ func NewValidator() Ivalidator {
 		validator: validator.New(),
 	}
 	v.validator.RegisterValidation("passportNumber", v.PassportNumber)
-	//	v.validator.RegisterValidation("settings", v.ValidateSettings)
+
+	v.validator.RegisterValidation("checkFilterId", v.CheckFilterId)
 
 	return &v
 }
@@ -52,6 +53,15 @@ func (v *Validator) PassportNumber(fl validator.FieldLevel) bool {
 	if err != nil || serie < 0 {
 		return false
 	}
+	return true
+}
+
+func (v *Validator) CheckFilterId(fl validator.FieldLevel) bool {
+	id := fl.Field().Int()
+	if id <= 0 {
+		return false
+	}
+
 	return true
 }
 

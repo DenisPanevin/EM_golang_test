@@ -8,10 +8,11 @@ import (
 
 func RegisterUserRoutes(router *mux.Router, useCase users.UseCase) {
 	h := NewHandler(useCase)
-	router.Handle("/check", h.CheckHealth()).Methods("GET")
-	router.Handle("/users", h.CreateUser()).Methods("POST")
-	router.Handle("/users", h.UpdateUser()).Methods(http.MethodPatch)
 
-	router.Handle("/users", h.Get()).Methods("GET")
+	router.Handle("/users", h.CreateUser()).Methods(http.MethodPost)
+	router.Handle("/users/{id}", h.UpdateUser()).Methods(http.MethodPatch)
+	router.Handle("/users/{id}", h.DeleteUser()).Methods(http.MethodDelete)
+
+	router.Handle("/users", h.Get()).Methods(http.MethodGet)
 
 }

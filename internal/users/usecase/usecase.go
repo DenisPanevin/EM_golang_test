@@ -3,13 +3,13 @@ package usecase
 import (
 	"EM-Api-testTask/internal/models"
 	"EM-Api-testTask/internal/users"
-	"EM-Api-testTask/pkg/handler"
 	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/kpango/glg"
 	"github.com/spf13/viper"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 )
@@ -65,100 +65,38 @@ func (uc *UserUseCase) Create(ctx context.Context, dto *models.PassportNumberDto
 	}
 	return nil, id
 }
-func (uc *UserUseCase) GetJob(r *http.Request) (error, *[]models.ShowUserDto) {
-	query := r.URL.Query()
-	dto := models.FiltersDto{
-		Id:         0,
-		Name:       "",
-		Surname:    "",
-		Patronymic: "",
-		TaskId:     0,
-		Limit:      10,
-		Page:       1,
-	}
 
-	for key, values := range query {
-		println(values[0])
-		switch key {
-		case "id":
-			id, err := strconv.Atoi(values[0])
-			if err != nil {
-				glg.Debugf("cant Parse int id from url", err)
-				return handler.ApiWrongInput, nil
-				dto.Page = 1
-			}
-			if id > 0 {
-				dto.Id = id
-			} else {
-				return handler.ApiWrongInput, nil
-			}
-		case "name":
-			dto.Name = values[0]
-
-		case "surname":
-			dto.Surname = values[0]
-
-		case "patronymic":
-			dto.Patronymic = values[0]
-
-		case "taskid":
-
-			id, err := strconv.Atoi(values[0])
-			if err != nil {
-				glg.Debugf("cant Parse int from url", err)
-				return handler.ApiWrongInput, nil
-				dto.TaskId = 0
-			}
-			if id > 0 {
-				dto.TaskId = id
-			} else {
-				return handler.ApiWrongInput, nil
-			}
-
-		case "limit":
-
-			lim, err := strconv.Atoi(values[0])
-			if err != nil {
-				glg.Debugf("cant Parse int from url", err)
-				return handler.ApiWrongInput, nil
-				dto.Limit = 0
-			}
-			if lim > 0 {
-				dto.Limit = lim
-			} else {
-				return handler.ApiWrongInput, nil
-			}
-		case "page":
-
-			page, err := strconv.Atoi(values[0])
-			if err != nil {
-				glg.Debugf("cant Parse int from url", err)
-				return handler.ApiWrongInput, nil
-				dto.Page = 1
-			}
-			if page > 0 {
-				dto.Page = page
-			} else {
-				return handler.ApiWrongInput, nil
-			}
-		}
-
-	}
-
-	err, u := uc.repo.GetJob(r.Context(), dto)
+func (uc *UserUseCase) Update(ctx context.Context, dto models.UpdateUserDto) (error, *int64) {
+	vals := url.Values{}
+	vals.Set("id", strconv.Itoa(dto.Id))
+	err, usr := uc.GetAll(ctx, vals)
 	if err != nil {
-		glg.Debugf("usecase error ,%s", err)
+		glg.Debugf("Error in update from get job usecase %s", err)
 		return err, nil
 	}
-
-	return nil, u
-
+	if dto.Name == "" {
+		dto.Name = (*usr)[0].Name
+	}
+	if dto.Surname == "" {
+		dto.Surname = (*usr)[0].Surname
+	}
+	if dto.Patronymic == "" {
+		dto.Patronymic = (*usr)[0].Patronymic
+	}
+	if dto.PassportNumber == "" {
+		dto.PassportNumber = (*usr)[0].PassportNumber
+	}
+	if dto.Address == "" {
+		dto.Address = (*usr)[0].Address
+	}
+	err, id := uc.repo.UpdateUser(ctx, dto)
+	return nil, id
 }
-
-func (uc *UserUseCase) Update(ctx context.Context, user models.UpdateUserDto) (error, *int64) {
+func (uc *UserUseCase) GetAll(ctx context.Context, vals url.Values) (error, *[]models.ShowUserDto) {
 	return nil, nil
 }
 
-func (uc *UserUseCase) DeleteUser(ctx context.Context, dto models.DeleteUserDto) error {
-	return nil
+func (uc *UserUseCase) DeleteUser(ctx context.Context, id int) error {
+	err := uc.repo.DeleteUser(ctx, id)
+	return err
 }

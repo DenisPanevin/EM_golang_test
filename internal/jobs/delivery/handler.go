@@ -49,9 +49,15 @@ func (h *Handler) AddJob() http.HandlerFunc {
 }
 func (h *Handler) GetJobs() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		//dto := new(models.CreateTaskDto)
 
-		//h.customRespond(w, r, http.StatusOK, fmt.Sprintf("Created! task id is %v", *id))
+		err, u := h.useCase.GetJobs(r.Context(), r.URL.Query())
+
+		if err != nil {
+			h.customErr(w, r, 500, err)
+			return
+		}
+
+		h.customRespond(w, r, http.StatusOK, u)
 
 	}
 
@@ -61,9 +67,12 @@ func (h *Handler) customErr(w http.ResponseWriter, r *http.Request, code int, er
 	h.customRespond(w, r, code, map[string]string{"error:": err.Error()})
 }
 func (h *Handler) customRespond(w http.ResponseWriter, r *http.Request, code int, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 
 	if data != nil {
-		json.NewEncoder(w).Encode(data)
+		if err := json.NewEncoder(w).Encode(data); err != nil {
+			glg.Debugf("", err)
+		}
 	}
 }

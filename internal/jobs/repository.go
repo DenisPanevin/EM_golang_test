@@ -10,4 +10,5 @@ type Repository interface {
 	StopJob(ctx context.Context, id *int64) error
 	Get(ctx context.Context) (error, *models.Job)
 	CheckExist(ctx context.Context, dto *models.AddJobDto) (*models.Job, error)
+	GetJob(ctx context.Context, filters models.UserFiltersDto, interval models.JobIntervalDto, pagefilters models.PageFiltersDto) (error, *[]models.ShowUserDto)
 }

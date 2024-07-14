@@ -3,14 +3,13 @@ package users
 import (
 	"EM-Api-testTask/internal/models"
 	"context"
-	"net/http"
+	"net/url"
 )
 
 type UseCase interface {
 	Create(ctx context.Context, dto *models.PassportNumberDto) (error, *int64)
-	GetJob(r *http.Request) (error, *[]models.ShowUserDto)
-
+	GetAll(ctx context.Context, vals url.Values) (error, *[]models.ShowUserDto)
 	Update(ctx context.Context, user models.UpdateUserDto) (error, *int64)
 
-	DeleteUser(ctx context.Context, dto models.DeleteUserDto) error
+	DeleteUser(ctx context.Context, id int) error
 }

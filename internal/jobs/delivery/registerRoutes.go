@@ -7,7 +7,7 @@ import (
 
 func RegisterJobsRoutes(router *mux.Router, useCase jobs.UseCase) {
 	h := NewHandler(useCase)
-	router.Handle("/jobs", h.GetJobs()).Methods("GET")
+	router.Handle("/jobs/user", h.GetJobs()).Methods("GET")
 	router.Handle("/jobs", h.AddJob()).Methods("POST")
 
 }

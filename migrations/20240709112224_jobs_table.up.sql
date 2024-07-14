@@ -1,13 +1,10 @@
-create table IF NOT EXISTS jobs(
+CREATE TABLE IF NOT EXISTS jobs (
+                                    id bigserial PRIMARY KEY NOT NULL,
+                                    user_id INTEGER NOT NULL,
+                                    task_id INTEGER NOT NULL,
+                                    started timestamptz,
+                                    stopped timestamptz,
 
-    id bigserial PRIMARY KEY not null ,
-    user_id INT NOT NULL,
-    task_id INT NOT NULL,
-    started timestamptz,
-    stopped timestamptz,
-
-    FOREIGN KEY (user_id) REFERENCES users (id),
-    FOREIGN KEY (task_id) REFERENCES tasks (id)
-
+                                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                                    FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
 );
-

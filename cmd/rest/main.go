@@ -7,6 +7,7 @@ import (
 )
 
 func main() {
+
 	glg.Get().SetLineTraceMode(glg.TraceLineShort)
 	dummyServer.StartDummy()
 
