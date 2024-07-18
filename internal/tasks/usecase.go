@@ -4,14 +4,11 @@ import (
 	"EM-Api-testTask/internal/models"
 	"context"
 	"net/http"
-	"os/user"
 )
 
 type UseCase interface {
-	Create(ctx context.Context, dto *models.CreateTaskDto) (error, *int64)
+	Create(ctx context.Context, dto *models.CreateTaskDto) (error, *models.Task)
 	Get(r *http.Request) (error, *models.User)
 
-	Edit(ctx context.Context) (error, *user.User)
-
-	DeleteTask(ctx context.Context) error
+	DeleteTask(ctx context.Context, id int) error
 }

@@ -3,6 +3,8 @@ package usecase
 import (
 	"EM-Api-testTask/internal/models"
 	"EM-Api-testTask/internal/users"
+	Apierrors "EM-Api-testTask/pkg"
+	Helpers "EM-Api-testTask/pkg/helpers"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -23,7 +25,7 @@ func NewUserUseCase(ur users.Repository) users.UseCase {
 		repo: ur,
 	}
 }
-func (uc *UserUseCase) Create(ctx context.Context, dto *models.PassportNumberDto) (error, *int64) {
+func (uc *UserUseCase) Create(ctx context.Context, dto *models.PassportNumberDto) (error, *models.User) {
 	SideServerUrl := viper.GetString("app.SideServerUrl")
 	splitCredentials := strings.Split(dto.PassportNumber, " ")
 	url := fmt.Sprintf("http://%s/info?passportSerie=%s&passportNumber=%s", SideServerUrl, splitCredentials[0], splitCredentials[1])
@@ -34,9 +36,6 @@ func (uc *UserUseCase) Create(ctx context.Context, dto *models.PassportNumberDto
 		return err, nil
 	}
 
-	//req.Header.Set("Content-Type", "application/json")
-
-	// Perform the HTTP POST request
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -47,6 +46,7 @@ func (uc *UserUseCase) Create(ctx context.Context, dto *models.PassportNumberDto
 
 	if resp.StatusCode != http.StatusOK {
 		glg.Debugf("cant get from remote server %v", resp.StatusCode)
+		err = Apierrors.NotFound
 		return err, nil
 	}
 
@@ -66,14 +66,15 @@ func (uc *UserUseCase) Create(ctx context.Context, dto *models.PassportNumberDto
 	return nil, id
 }
 
-func (uc *UserUseCase) Update(ctx context.Context, dto models.UpdateUserDto) (error, *int64) {
+func (uc *UserUseCase) Update(ctx context.Context, dto models.UpdateUserDto) (error, *models.User) {
 	vals := url.Values{}
 	vals.Set("id", strconv.Itoa(dto.Id))
 	err, usr := uc.GetAll(ctx, vals)
 	if err != nil {
-		glg.Debugf("Error in update from get job usecase %s", err)
+		glg.Debugf("Error in update from get All usecase %s", err)
 		return err, nil
 	}
+
 	if dto.Name == "" {
 		dto.Name = (*usr)[0].Name
 	}
@@ -89,11 +90,67 @@ func (uc *UserUseCase) Update(ctx context.Context, dto models.UpdateUserDto) (er
 	if dto.Address == "" {
 		dto.Address = (*usr)[0].Address
 	}
-	err, id := uc.repo.UpdateUser(ctx, dto)
-	return nil, id
+	e, id := uc.repo.UpdateUser(ctx, dto)
+	return e, id
+
 }
 func (uc *UserUseCase) GetAll(ctx context.Context, vals url.Values) (error, *[]models.ShowUserDto) {
-	return nil, nil
+	filters := models.UserFiltersDto{}
+
+	if vals.Get("id") != "" {
+		id, err := strconv.Atoi(vals.Get("id"))
+		if err != nil || id <= 0 {
+			glg.Debugf("error parsing id in filters %s", err)
+			return Apierrors.ApiWrongInput, nil
+		} else {
+			filters.Id = id
+		}
+	}
+
+	filters.Name = vals.Get("name")
+	filters.Surname = vals.Get("surname")
+	filters.Patronymic = vals.Get("patronymic")
+	filters.PassportNumber = vals.Get("passportnumber")
+	filters.Address = vals.Get("address")
+	println(vals.Get("passportnumber"))
+	v := Helpers.NewValidator()
+	err := v.Validate(filters)
+	if err != nil {
+		glg.Debugf("error validating filters %s", err)
+		return Apierrors.ApiWrongInput, nil
+	}
+
+	pageFilters := models.PageFiltersDto{
+		Limit: 50,
+		Page:  1,
+	}
+	if vals.Get("limit") != "" {
+		limit, e := strconv.Atoi(vals.Get("limit"))
+		if e != nil || limit <= 0 {
+			glg.Debugf("error parsing page in Pagefilters %s", e)
+			return Apierrors.ApiWrongInput, nil
+		} else {
+			pageFilters.Limit = limit
+		}
+	}
+	if vals.Get("page") != "" {
+		page, er := strconv.Atoi(vals.Get("page"))
+		if er != nil || page <= 0 {
+			glg.Debugf("error parsing page in Pagefilters %s", er)
+			return Apierrors.ApiWrongInput, nil
+		} else {
+			pageFilters.Page = page
+		}
+	}
+
+	pageFilters.CalculateOffset()
+
+	err, u := uc.repo.GetAll(ctx, filters, pageFilters)
+	if err != nil {
+		glg.Debugf("cant get all from users repo in usecase %s", err)
+		return err, nil
+	}
+	return nil, u
 }
 
 func (uc *UserUseCase) DeleteUser(ctx context.Context, id int) error {

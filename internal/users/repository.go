@@ -6,10 +6,10 @@ import (
 )
 
 type Repository interface {
-	CreateUser(ctx context.Context, dto models.CreateUserDto) (error, *int64)
-	UpdateUser(ctx context.Context, filters models.UpdateUserDto) (error, *int64)
+	CreateUser(ctx context.Context, dto models.CreateUserDto) (error, *models.User)
+	UpdateUser(ctx context.Context, filters models.UpdateUserDto) (error, *models.User)
 	DeleteUser(ctx context.Context, id int) error
-
+	GetAll(ctx context.Context, filters models.UserFiltersDto, pagefilters models.PageFiltersDto) (error, *[]models.ShowUserDto)
 	/*GetByEmail(ctx context.Context, email string) (error, *models.User)
 	GetList(ctx context.Context, page int, size int) (error, []models.User)
 	Update(ctx context.Context, user CreateUserDto) (error, *user.User)

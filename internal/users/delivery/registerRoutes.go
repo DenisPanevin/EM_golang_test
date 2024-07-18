@@ -14,5 +14,6 @@ func RegisterUserRoutes(router *mux.Router, useCase users.UseCase) {
 	router.Handle("/users/{id}", h.DeleteUser()).Methods(http.MethodDelete)
 
 	router.Handle("/users", h.Get()).Methods(http.MethodGet)
+	router.Handle("/check", h.CheckHealth()).Methods(http.MethodGet)
 
 }

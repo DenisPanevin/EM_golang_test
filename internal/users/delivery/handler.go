@@ -3,13 +3,15 @@ package delivery
 import (
 	"EM-Api-testTask/internal/models"
 	"EM-Api-testTask/internal/users"
-	"EM-Api-testTask/pkg/handler"
+	Apierrors "EM-Api-testTask/pkg"
+	"strings"
+
 	Helpers "EM-Api-testTask/pkg/helpers"
+	helpers "EM-Api-testTask/pkg/http"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/kpango/glg"
-	"golang.org/x/net/webdav"
 	"net/http"
 	"strconv"
 )
@@ -24,51 +26,96 @@ func NewHandler(uc users.UseCase) *Handler {
 	}
 }
 
+// @Summary      Creates new user
+// @Description  Creates new user by passport number
+// @Accept       json
+// @Produce      json
+// @Param request body models.PassportNumberDto	true	"Passport number in xxxx xxxxxx format"
+//
+//	@Success 201  {object} models.User "returning User object"
+//	@Failure 400	{object}	helpers.ErrorDto
+//	@Failure 422	{object}	helpers.ErrorDto
+//	@Failure 500	{object}	helpers.ErrorDto
+//
+// @Router       /users [post]
 func (h *Handler) CreateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		dto := new(models.PassportNumberDto)
 		if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
-			h.customErr(w, r, http.StatusBadRequest, err)
+			helpers.SendError(w, r, http.StatusBadRequest, err)
 			return
 		}
 		v := Helpers.NewValidator()
 		if err := v.Validate(dto); err != nil {
-			h.customErr(w, r, http.StatusUnprocessableEntity, handler.ApiWrongInput)
+			helpers.SendError(w, r, http.StatusUnprocessableEntity, Apierrors.ApiWrongInput)
 			return
 		}
 
-		err, id := h.useCase.Create(r.Context(), dto)
+		err, usr := h.useCase.Create(r.Context(), dto)
+
 		if err != nil {
-			h.customRespond(w, r, http.StatusInternalServerError, nil)
+
+			if strings.Contains(err.Error(), " duplicate key value violates unique constraint") {
+				helpers.SendError(w, r, http.StatusBadRequest, Apierrors.AlreadyExists)
+				return
+
+			}
+
+			helpers.SendError(w, r, http.StatusInternalServerError, Apierrors.CantCreateUser)
 			return
-		}
-		if id != nil {
-			h.customRespond(w, r, http.StatusOK, fmt.Sprintf("Created! user id is %v", *id))
-			return
+
 		}
 
-		h.customRespond(w, r, http.StatusInternalServerError, nil)
+		helpers.SendData(w, r, http.StatusCreated, usr)
 		return
 
 	}
 
 }
 
+// @Summary      Get list of users
+// @Description  return list of users
+// @Produce      json
+// @Param id query int false "User ID"
+// @Param name query string false "User name"
+// @Param surname query int false "User surname"
+// @Param patronymic query string false "User patronymic"
+// @Param address query string false "User address"
+// @Param passportnumber query string false "User passpor tnumber"
+// @Param page query int false "page"
+// @Param limit query int false "limit"
+//
+//	@Success 200  {object} []models.ShowUserDto{Jobs=nil} "returning Users objects"
+//	@Failure 500	{object}	helpers.ErrorDto
+//
+// @Router       /users [get]
 func (h *Handler) Get() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		err, u := h.useCase.GetAll(r.Context(), r.URL.Query())
 
 		if err != nil {
-			h.customErr(w, r, 500, err)
+			helpers.SendError(w, r, 500, err)
 			return
 		}
 
-		h.customRespond(w, r, http.StatusOK, u)
+		helpers.SendData(w, r, 200, u)
 
 	}
 
 }
+
+// @Summary      Updates a user
+// @Description  Updates a user by id
+// @Accept       json
+// @Produce      json
+// @Param id path int true "User ID"
+// @Param request body models.UpdateUserDto	true	"fields need to be updated"
+//
+//	@Success 200  {object} models.User "returning User object"
+//	@Failure 500	{object}	helpers.ErrorDto
+//
+// @Router       /users/{id} [patch]
 func (h *Handler) UpdateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
@@ -76,7 +123,7 @@ func (h *Handler) UpdateUser() http.HandlerFunc {
 		id, err := strconv.Atoi(vars["id"])
 		if err != nil || id < 1 {
 			glg.Logf("cant parse id from updat user handler %s", err)
-			h.customErr(w, r, http.StatusUnprocessableEntity, handler.ApiWrongInput)
+			helpers.SendError(w, r, http.StatusUnprocessableEntity, Apierrors.ApiWrongInput)
 			return
 		}
 		dto := models.UpdateUserDto{
@@ -89,32 +136,42 @@ func (h *Handler) UpdateUser() http.HandlerFunc {
 		}
 		if err = json.NewDecoder(r.Body).Decode(&dto); err != nil {
 			glg.Debugf("cant decode json in update handler %s", err)
-			h.customErr(w, r, http.StatusBadRequest, handler.ApiWrongInput)
+			helpers.SendError(w, r, http.StatusBadRequest, Apierrors.ApiWrongInput)
 			return
 		}
 		v := Helpers.NewValidator()
 		if err = v.Validate(dto); err != nil {
 			glg.Debugf("cant validate json in update handler %s", err)
-			h.customErr(w, r, http.StatusUnprocessableEntity, handler.ApiWrongInput)
+			helpers.SendError(w, r, http.StatusUnprocessableEntity, Apierrors.ApiWrongInput)
 			return
 		}
 
 		if dto.Name == "" && dto.Surname == "" && dto.Patronymic == "" && dto.PassportNumber == "" && dto.Address == "" {
-			h.customErr(w, r, webdav.StatusUnprocessableEntity, handler.ApiWrongInput)
+			helpers.SendError(w, r, http.StatusUnprocessableEntity, Apierrors.ApiWrongInput)
 			return
 		}
 		dto.Id = id
 
-		err, uid := h.useCase.Update(r.Context(), dto)
+		err, usr := h.useCase.Update(r.Context(), dto)
 		if err != nil {
 			glg.Debugf("error in update usecase returning %s", err)
-			h.customRespond(w, r, http.StatusInternalServerError, nil)
+			helpers.SendError(w, r, http.StatusInternalServerError, err)
 			return
 		}
-		h.customRespond(w, r, http.StatusOK, fmt.Sprintf("Updated, user id is %v", *uid))
+		helpers.SendData(w, r, http.StatusOK, *usr)
 	}
 
 }
+
+// @Summary      Delete a user
+// @Description  Deletes a user by id
+// @Param id path int true "User ID"
+//
+//	@Success 200  {string }	string	 "{Deleted id: id}"
+//	@Failure 500	{object}	helpers.ErrorDto
+//	@Failure 422	{object}	helpers.ErrorDto
+//
+// @Router       /users/{id} [delete]
 func (h *Handler) DeleteUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
@@ -122,31 +179,35 @@ func (h *Handler) DeleteUser() http.HandlerFunc {
 		id, err := strconv.Atoi(vars["id"])
 		if err != nil || id < 1 {
 			glg.Logf("cant parse id from updat user handler %s", err)
-			h.customErr(w, r, http.StatusUnprocessableEntity, handler.ApiWrongInput)
+			helpers.SendError(w, r, http.StatusUnprocessableEntity, Apierrors.ApiWrongInput)
+
 			return
 		}
 		err = h.useCase.DeleteUser(r.Context(), id)
 		if err != nil {
 			glg.Debugf("error in delete usecase returning %s", err)
-			h.customErr(w, r, http.StatusInternalServerError, err)
+			helpers.SendError(w, r, http.StatusInternalServerError, err)
 			return
 		}
-		h.customRespond(w, r, http.StatusOK, fmt.Sprintf("Deleted user with id %v", id))
+		helpers.SendData(w, r, http.StatusOK, fmt.Sprintf(fmt.Sprintf(`{Deleted id: %v}`, id)))
 	}
 
 }
+func (h *Handler) CheckHealth() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 
-func (h *Handler) customErr(w http.ResponseWriter, r *http.Request, code int, err error) {
-	h.customRespond(w, r, code, map[string]string{"error:": err.Error()})
-}
-func (h *Handler) customRespond(w http.ResponseWriter, r *http.Request, code int, data interface{}) {
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-
-	if data != nil {
-		if err := json.NewEncoder(w).Encode(data); err != nil {
-			glg.Debugf("", err)
+		type ErrorDto struct {
+			Code int `json:"code"`
 		}
+		type DataDto struct {
+			Data interface{} `json:"data"`
+		}
+
+		type test struct {
+			Id      int    `json:"id"`
+			Message string `json:"message"`
+		}
+
 	}
+
 }

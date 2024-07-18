@@ -9,6 +9,7 @@ import (
 func RegisterTaskRoutes(router *mux.Router, useCase tasks.UseCase) {
 	h := NewHandler(useCase)
 	router.Handle("/tasks", h.CreateTask()).Methods("POST")
+	router.Handle("/tasks/{id}", h.DeleteTask()).Methods("DELETE")
 	//	router.Handle("/users", h.CreateUser()).Methods("POST")
 
 	//router.Handle("/users", h.Get()).Methods("GET")

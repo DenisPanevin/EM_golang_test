@@ -64,32 +64,3 @@ func (v *Validator) CheckFilterId(fl validator.FieldLevel) bool {
 
 	return true
 }
-
-/*
-func (v *Validator) ValidateSettings(fl validator.FieldLevel) bool {
-	input, ok := fl.Field().Interface().([]int)
-	if !ok {
-		return false
-	}
-
-	output := true
-
-	for i := 0; i < len(input); i++ {
-		switch i {
-		case 0:
-			output = (input[0] < 365 && input[0] >= 0)
-
-		case 1:
-			output = input[1] >= 0
-
-		}
-	}
-
-	return output
-
-}
-func (v *Validator) ValidateDate(fl validator.FieldLevel) bool {
-	dateStr := fl.Field().String()
-	_, err := time.Parse("2006-01-02", dateStr)
-	return err == nil
-}*/

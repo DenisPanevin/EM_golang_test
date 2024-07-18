@@ -3,10 +3,11 @@ package usecase
 import (
 	"EM-Api-testTask/internal/jobs"
 	"EM-Api-testTask/internal/models"
-	"EM-Api-testTask/pkg/handler"
+	Apierrors "EM-Api-testTask/pkg"
+	"errors"
+
 	Helpers "EM-Api-testTask/pkg/helpers"
 	"context"
-	"errors"
 	"github.com/kpango/glg"
 	"net/url"
 	"strconv"
@@ -67,7 +68,7 @@ func (t *TasksUseCase) GetJobs(ctx context.Context, vals url.Values) (error, *[]
 		id, err := strconv.Atoi(vals.Get("id"))
 		if err != nil || id <= 0 {
 			glg.Debugf("error parsing id in filters %s", err)
-			return handler.ApiWrongInput, nil
+			return Apierrors.ApiWrongInput, nil
 		} else {
 			filters.Id = id
 		}
@@ -84,7 +85,7 @@ func (t *TasksUseCase) GetJobs(ctx context.Context, vals url.Values) (error, *[]
 	err := v.Validate(filters)
 	if err != nil {
 		glg.Debugf("error validating filters %s", err)
-		return handler.ApiWrongInput, nil
+		return Apierrors.ApiWrongInput, nil
 	}
 
 	pageFilters := models.PageFiltersDto{
@@ -95,16 +96,16 @@ func (t *TasksUseCase) GetJobs(ctx context.Context, vals url.Values) (error, *[]
 		limit, e := strconv.Atoi(vals.Get("limit"))
 		if e != nil || limit <= 0 {
 			glg.Debugf("error parsing page in Pagefilters %s", e)
-			return handler.ApiWrongInput, nil
+			return Apierrors.ApiWrongInput, nil
 		} else {
-			pageFilters.Limit = limit
+			pageFilters.Limit = limit + 1
 		}
 	}
 	if vals.Get("page") != "" {
 		page, er := strconv.Atoi(vals.Get("page"))
 		if er != nil || page <= 0 {
 			glg.Debugf("error parsing page in Pagefilters %s", er)
-			return handler.ApiWrongInput, nil
+			return Apierrors.ApiWrongInput, nil
 		} else {
 			pageFilters.Page = page
 		}
@@ -119,6 +120,7 @@ func (t *TasksUseCase) GetJobs(ctx context.Context, vals url.Values) (error, *[]
 			return e, nil
 		}
 		jobInterval.DateStart = started
+		println(jobInterval.DateStart.String())
 	}
 	ti, _ := time.Parse("2006.01.02", "9999.12.31")
 	jobInterval.DateEnd = ti

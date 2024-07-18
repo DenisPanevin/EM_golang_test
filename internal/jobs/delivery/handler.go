@@ -3,8 +3,9 @@ package delivery
 import (
 	"EM-Api-testTask/internal/jobs"
 	"EM-Api-testTask/internal/models"
-	"EM-Api-testTask/pkg/handler"
+	Apierrors "EM-Api-testTask/pkg"
 	Helpers "EM-Api-testTask/pkg/helpers"
+	helpers "EM-Api-testTask/pkg/http"
 	"encoding/json"
 	"github.com/kpango/glg"
 	"net/http"
@@ -20,59 +21,68 @@ func NewHandler(uc jobs.UseCase) *Handler {
 	}
 }
 
+// @Summary      Assign user to a task
+// @Description  Assign user to a task by user id and task id first post starts the task and second stops it
+// @Accept       json
+// @Param request body models.AddJobDto	true	"{"userid":1,"taskid":1}"
+//
+//	@Success 200   "status OK"
+//	@Failure 400	{object}	helpers.ErrorDto
+//	@Failure 422	{object}	helpers.ErrorDto
+//	@Failure 500	{object}	helpers.ErrorDto
+//
+// @Router       /jobs [post]
 func (h *Handler) AddJob() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		dto := new(models.AddJobDto)
 		if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
 			glg.Debugf("job decoder %s", err)
-			h.customErr(w, r, http.StatusBadRequest, err)
+			helpers.SendError(w, r, http.StatusBadRequest, err)
 			return
 		}
 		v := Helpers.NewValidator()
 		if err := v.Validate(dto); err != nil {
 
-			h.customErr(w, r, http.StatusUnprocessableEntity, handler.ApiWrongInput)
+			helpers.SendError(w, r, http.StatusUnprocessableEntity, Apierrors.ApiWrongInput)
 			return
 		}
 
 		err, _ := h.useCase.AddJob(r.Context(), dto)
 		if err != nil {
 			glg.Debugf("job usecase %s", err)
-			h.customRespond(w, r, http.StatusInternalServerError, nil)
+			helpers.SendError(w, r, http.StatusInternalServerError, err)
 			return
 		}
 
-		//		h.customRespond(w, r, http.StatusOK, fmt.Sprintf("Added! Job id is %v", *id))
+		helpers.SendData(w, r, http.StatusOK, nil)
 
 	}
 
 }
+
+// @Summary      Get list of jobs for user by user id
+// @Description  return list of jobs for user by user id
+// @Produce      json
+// @Param id query int false "User ID"
+// @Param page query int false "page"
+// @Param limit query int false "limit"
+//
+//	@Success 200  {object} models.ShowUserDto{TotalWorkTime=nil} "returning Users objects"
+//	@Failure 500	{object}	helpers.ErrorDto
+//
+// @Router       /jobs/user [get]
 func (h *Handler) GetJobs() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		err, u := h.useCase.GetJobs(r.Context(), r.URL.Query())
 
 		if err != nil {
-			h.customErr(w, r, 500, err)
+			helpers.SendError(w, r, 500, err)
 			return
 		}
 
-		h.customRespond(w, r, http.StatusOK, u)
+		helpers.SendData(w, r, http.StatusOK, u)
 
 	}
 
-}
-
-func (h *Handler) customErr(w http.ResponseWriter, r *http.Request, code int, err error) {
-	h.customRespond(w, r, code, map[string]string{"error:": err.Error()})
-}
-func (h *Handler) customRespond(w http.ResponseWriter, r *http.Request, code int, data interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-
-	if data != nil {
-		if err := json.NewEncoder(w).Encode(data); err != nil {
-			glg.Debugf("", err)
-		}
-	}
 }

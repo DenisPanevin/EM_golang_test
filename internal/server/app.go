@@ -27,6 +27,9 @@ import (
 	"net/http"
 
 	"time"
+
+	_ "EM-Api-testTask/docs" // Import generated swagger docs
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 type App struct {
@@ -47,26 +50,16 @@ func NewApp(config_path string) (*App, error) {
 
 	Db := pkg.InitDb((*cfg).Psql_connection)
 
-	//userRepo := authmongo.NewUserRepository(db, viper.GetString("mongo.user_collection"))
-	//bookmarkRepo := bmmongo.NewBookmarkRepository(db, viper.GetString("mongo.bookmark_collection"))
 	ur := usersRepository.NewUsersRepo(Db)
 	tr := tasksRepoisitory.NewTasksRepo(Db)
 	jr := jobsRepository.NewJobsRepo(Db)
 
 	return &App{
 		Config: cfg,
-		//	Db:     Db,
+
 		UserUc:  usersUsecase.NewUserUseCase(ur),
 		TasksUc: tasksUseCase.NewTasksUseCase(tr),
 		JobsUc:  jobsUseCase.NewJobsUseCase(jr),
-
-		/*bookmarkUC: bmusecase.NewBookmarkUseCase(bookmarkRepo),
-		authUC: authusecase.NewAuthUseCase(
-			userRepo,
-			viper.GetString("auth.hash_salt"),
-			[]byte(viper.GetString("auth.signing_key")),
-			viper.GetDuration("auth.token_ttl"),
-		),*/
 	}, nil
 }
 
@@ -74,12 +67,14 @@ func (a *App) Run() error {
 
 	govalidator.SetFieldsRequiredByDefault(true)
 	router := mux.NewRouter()
-	//validators.ValidatorInit()
+	router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(
+		httpSwagger.URL("http://localhost:8080/swagger/doc.json"), // The url pointing to API definition
+	))
+
 	usersDelivery.RegisterUserRoutes(router, a.UserUc)
 	tasksDelivery.RegisterTaskRoutes(router, a.TasksUc)
 	jobsDelivery.RegisterJobsRoutes(router, a.JobsUc)
 
-	// HTTP Server
 	a.httpServer = &http.Server{
 		Addr:           ":" + strconv.Itoa(a.Config.Port),
 		Handler:        router,
