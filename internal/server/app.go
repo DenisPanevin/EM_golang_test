@@ -15,6 +15,7 @@ import (
 	usersUsecase "EM-Api-testTask/internal/users/usecase"
 	"EM-Api-testTask/pkg"
 	"github.com/asaskevich/govalidator"
+	"github.com/gorilla/handlers"
 	"github.com/kpango/glg"
 	"os"
 	"os/signal"
@@ -70,6 +71,7 @@ func (a *App) Run() error {
 	router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(
 		httpSwagger.URL("http://localhost:8080/swagger/doc.json"), // The url pointing to API definition
 	))
+	router.Use(handlers.CORS(handlers.AllowedOrigins([]string{"*"})))
 
 	usersDelivery.RegisterUserRoutes(router, a.UserUc)
 	tasksDelivery.RegisterTaskRoutes(router, a.TasksUc)

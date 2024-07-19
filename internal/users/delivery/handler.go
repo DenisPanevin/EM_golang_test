@@ -4,8 +4,6 @@ import (
 	"EM-Api-testTask/internal/models"
 	"EM-Api-testTask/internal/users"
 	Apierrors "EM-Api-testTask/pkg"
-	"strings"
-
 	Helpers "EM-Api-testTask/pkg/helpers"
 	helpers "EM-Api-testTask/pkg/http"
 	"encoding/json"
@@ -55,15 +53,8 @@ func (h *Handler) CreateUser() http.HandlerFunc {
 
 		if err != nil {
 
-			if strings.Contains(err.Error(), " duplicate key value violates unique constraint") {
-				helpers.SendError(w, r, http.StatusBadRequest, Apierrors.AlreadyExists)
-				return
-
-			}
-
-			helpers.SendError(w, r, http.StatusInternalServerError, Apierrors.CantCreateUser)
+			helpers.SendError(w, r, http.StatusInternalServerError, err)
 			return
-
 		}
 
 		helpers.SendData(w, r, http.StatusCreated, usr)
@@ -196,17 +187,7 @@ func (h *Handler) DeleteUser() http.HandlerFunc {
 func (h *Handler) CheckHealth() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		type ErrorDto struct {
-			Code int `json:"code"`
-		}
-		type DataDto struct {
-			Data interface{} `json:"data"`
-		}
-
-		type test struct {
-			Id      int    `json:"id"`
-			Message string `json:"message"`
-		}
+		helpers.SendData(w, r, 200, fmt.Sprint("all good"))
 
 	}
 

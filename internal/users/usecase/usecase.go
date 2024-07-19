@@ -60,8 +60,14 @@ func (uc *UserUseCase) Create(ctx context.Context, dto *models.PassportNumberDto
 	//add validation here
 	err, id := uc.repo.CreateUser(ctx, cu)
 	if err != nil {
+		if strings.Contains(err.Error(), " duplicate key value violates unique constraint") {
+
+			return Apierrors.AlreadyExists, nil
+
+		}
+
 		glg.Debugf("error from repo layer in creating user %s ", err)
-		return err, nil
+		return Apierrors.CantCreateUser, nil
 	}
 	return nil, id
 }

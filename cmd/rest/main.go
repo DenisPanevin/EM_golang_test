@@ -1,7 +1,6 @@
 package main
 
 import (
-	"EM-Api-testTask/dummyServer"
 	"EM-Api-testTask/internal/server"
 
 	_ "EM-Api-testTask/docs" // Import generated swagger docs
@@ -17,7 +16,6 @@ func main() {
 	// @BasePath /
 
 	glg.Get().SetLineTraceMode(glg.TraceLineShort)
-	dummyServer.StartDummy()
 
 	app, err := server.NewApp("./config")
 	if err != nil {
