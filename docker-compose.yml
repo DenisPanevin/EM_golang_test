@@ -1,0 +1,45 @@
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: app
+    ports:
+      - "8080:8090"
+    volumes:
+      - E:/SOFTDEV/Go_training/EM_api_tt/.env:/.env
+    depends_on:
+      - postgres
+      - flyway
+  postgres:
+    image: postgres:latest
+    container_name: postgres-1
+    environment:
+      POSTGRES_DB: emtt     # Default database name
+      POSTGRES_USER: postgres     # Default username
+      POSTGRES_PASSWORD: postgres # Default password
+
+    ports:
+      - "5432:5432"  # Expose PostgreSQL on port 5432
+
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+  flyway:
+    image: flyway/flyway:latest
+    container_name: flyway
+    depends_on:
+      - postgres
+    entrypoint: ["flyway", "migrate"]
+    environment:
+      FLYWAY_URL: jdbc:postgresql://postgres:5432/emtt
+      FLYWAY_USER: postgres
+      FLYWAY_PASSWORD: postgres
+    volumes:
+      - ./migrations:/flyway/sql
+
+
+volumes:
+  pgdata:
+    external: true
+
